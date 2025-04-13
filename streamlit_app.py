@@ -3,6 +3,7 @@ import pandas as pd  # Pandas is imported in case it's needed for future tabular
 import requests  # Used to make HTTP requests to the Masters leaderboard API
 from collections import defaultdict  # Allows easy dictionary creation for tier counts
 from streamlit_autorefresh import st_autorefresh  # Enables automatic app rerun every interval
+from datetime import datetime  # already built-in
 
 from masters_teams_hardcoded import teams_data  # Load the pool teams from a separate hardcoded file
 
@@ -15,7 +16,7 @@ CUT_RED = "#ba0c2f"  # Official Masters red
 st_autorefresh(interval=5 * 60 * 1000, key="auto-refresh")
 
 
-
+last_updated = datetime.now().strftime("%B %d, %Y at %I:%M %p")
 # Inject custom CSS styling for leaderboard tables and layout
 st.markdown(f"""
     <style>
@@ -40,8 +41,8 @@ st.markdown(f"""
 st.markdown("<img src='https://www.masters.com/assets/images/nav/masters_logo_2023.png' class='logo'>", unsafe_allow_html=True)
 
 # Title header displayed below logo
-st.markdown("<h1 style='color:#006747; font-family:Georgia;'>🏌️ Masters Fantasy Pool</h1>", unsafe_allow_html=True)
-
+st.markdown("<h1 style='color:#006747; font-family:Georgia; text-align:center;'>🏌️ Masters Fantasy Pool</h1>", unsafe_allow_html=True)
+st.markdown(f"<p style='text-align:right; color:gray; font-size:14px;'>Last updated: {last_updated} UTC</p>", unsafe_allow_html=True)
 # Fetch JSON live scores from the Masters website with 5-minute caching
 @st.cache_data(ttl=300)
 def fetch_live_scores():
