@@ -3,7 +3,6 @@ import pandas as pd  # Pandas is imported in case it's needed for future tabular
 import requests  # Used to make HTTP requests to the Masters leaderboard API
 from collections import defaultdict  # Allows easy dictionary creation for tier counts
 from streamlit_autorefresh import st_autorefresh  # Enables automatic app rerun every interval
-from datetime import datetime  # already built-in
 
 from masters_teams_hardcoded import teams_data  # Load the pool teams from a separate hardcoded file
 
@@ -12,11 +11,12 @@ MASTERS_GREEN = "#006747"  # Official Masters green
 MASTERS_YELLOW = "#fce300"  # Official Masters yellow
 CUT_RED = "#ba0c2f"  # Official Masters red
 
-# Configure the Streamlit app page layout
+# Automatically refresh the app every 5 minutes (300,000 ms)
 st_autorefresh(interval=5 * 60 * 1000, key="auto-refresh")
 
+# Configure the Streamlit app page layout
 
-last_updated = datetime.now().strftime("%B %d, %Y at %I:%M %p")
+
 # Inject custom CSS styling for leaderboard tables and layout
 st.markdown(f"""
     <style>
@@ -42,7 +42,13 @@ st.markdown("<img src='https://www.masters.com/assets/images/nav/masters_logo_20
 
 # Title header displayed below logo
 st.markdown("<h1 style='color:#006747; font-family:Georgia; text-align:center;'>🏌️ Masters Fantasy Pool</h1>", unsafe_allow_html=True)
-st.markdown(f"<p style='text-align:right; color:gray; font-size:14px;'>Last updated: {last_updated} UTC</p>", unsafe_allow_html=True)
+
+# Show last updated timestamp in EST
+from datetime import datetime
+from zoneinfo import ZoneInfo
+last_updated = datetime.now(ZoneInfo("America/New_York")).strftime("%B %d, %Y at %I:%M %p %Z")
+st.markdown(f"<p style='text-align:right; color:gray; font-size:14px;'>Last updated: {last_updated}</p>", unsafe_allow_html=True)
+
 # Fetch JSON live scores from the Masters website with 5-minute caching
 @st.cache_data(ttl=300)
 def fetch_live_scores():
@@ -69,10 +75,13 @@ def get_player_score(name, data):
     key = name.strip().lower()
     p = data.get(key)
     if not p:
-        return None, "NOT FOUND"
+        return None, "NOT FOUND", None, None, None
     status = p.get("status", "OK")
     topar = p.get("topar")
-    return normalize_topar(topar), status, p.get("id")  # Also return player ID
+    player_id = p.get("id")
+    thru = p.get("thru")
+    tee_time = p.get("teetime")  # Corrected field name
+    return normalize_topar(topar), status, player_id, thru, tee_time
 
 # Fetch leaderboard data
 live_data = fetch_live_scores()
@@ -95,7 +104,7 @@ for team in teams_data:
     row = {"Team": team["Person"], "Players": [], "AdjustedScores": []}
     for i in range(1, 7):
         name = team[f"Tier {i}"].strip()
-        score, status, pid = get_player_score(name, live_data)
+        score, status, pid, thru, tee_time = get_player_score(name, live_data)
 
         # Build player image link if ID exists
         player_img = f"<img src='https://images.masters.com/players/2025/240x240/{pid}.jpg' width='40' style='border-radius:50%;'><br>" if pid else ""
@@ -107,8 +116,20 @@ for team in teams_data:
             adjusted = score
             display_score = str(score)
 
+        # Build status label
+        if status == "A" and thru:
+            status_display = f"<br><span style='font-size:12px; color:gray;'>Thru {thru}</span>"
+        elif status == "F":
+            status_display = "<br><span style='font-size:12px; color:gray;'>Finished</span>"
+        elif status == "C":
+            status_display = "<br><span style='font-size:12px; color:gray;'>Cut</span>"
+        elif status == "N" and tee_time:
+            status_display = f"<br><span style='font-size:12px; color:gray;'>Tee: {tee_time}</span>"
+        else:
+            status_display = ""
+
         row["AdjustedScores"].append(adjusted)
-        row["Players"].append(f"{player_img}<strong>{name}</strong><br>{display_score}")
+        row["Players"].append(f"{player_img}<strong>{name}</strong><br>{display_score}{status_display}")
         all_player_scores.append((name, adjusted))
 
     row["Total"] = sum(sorted(row["AdjustedScores"])[:5])
