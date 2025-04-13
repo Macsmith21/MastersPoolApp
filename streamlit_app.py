@@ -2,6 +2,7 @@ import streamlit as st  # Streamlit is used for building the web app
 import pandas as pd  # Pandas is imported in case it's needed for future tabular data manipulation
 import requests  # Used to make HTTP requests to the Masters leaderboard API
 from collections import defaultdict  # Allows easy dictionary creation for tier counts
+from streamlit_autorefresh import st_autorefresh  # Enables automatic app rerun every interval
 
 from masters_teams_hardcoded import teams_data  # Load the pool teams from a separate hardcoded file
 
@@ -11,7 +12,9 @@ MASTERS_YELLOW = "#fce300"  # Official Masters yellow
 CUT_RED = "#ba0c2f"  # Official Masters red
 
 # Configure the Streamlit app page layout
-st.set_page_config("Masters Pool", layout="wide")  # Wide layout for leaderboard readability
+st_autorefresh(interval=5 * 60 * 1000, key="auto-refresh")
+
+
 
 # Inject custom CSS styling for leaderboard tables and layout
 st.markdown(f"""
