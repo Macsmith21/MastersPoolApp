@@ -16,6 +16,11 @@ st.set_page_config("Masters Pool", layout="wide")  # Wide layout for leaderboard
 # Inject custom CSS styling for leaderboard tables and layout
 st.markdown(f"""
     <style>
+    @media screen and (max-width: 768px) {{
+        .leaderboard-table {{ font-size: 10px; }}
+        .leaderboard-table img {{ width: 24px !important; }}
+        .leaderboard-table td, .leaderboard-table th {{ padding: 0.3em; }}
+    }}
     .leaderboard-table {{ width: 100%; border-collapse: collapse; font-family: 'Arial Narrow', Arial, sans-serif; font-size: 16px; }}
     .leaderboard-table th, .leaderboard-table td {{ border: 1px solid #ccc; text-align: center; padding: 0.5em; }}
     .leaderboard-table th {{ background-color: {MASTERS_GREEN}; color: white; text-transform: uppercase; font-weight: bold; }}
